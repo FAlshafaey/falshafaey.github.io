@@ -223,10 +223,10 @@
         a.remove();
         window.URL.revokeObjectURL(url);
 
-        statusEl.textContent = 'تم توليد التقرير وتحميله. (لو حطيتي إيميل ممكن يوصلك نسخة إضافية)';
+        statusEl.textContent = 'تم توليد التقرير وتحميله. (لو حطيت إيميل ممكن يوصلك نسخة إضافية)';
       } catch (err) {
         console.error(err);
-        statusEl.textContent = 'صار خطأ أثناء التحليل. تأكدي من الرابط أو جربي ملف أصغر.';
+        statusEl.textContent = 'صار خطأ أثناء التحليل. تأكد من الرابط أو جرب ملف أصغر.';
         statusEl.classList.add('error');
       } finally {
         btn.disabled = false;
