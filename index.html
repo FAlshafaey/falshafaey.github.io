@@ -6,77 +6,166 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       min-height: 100vh;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #e0f2fe 0, #f9fafb 42%, #f1f5f9 100%);
+      background: radial-gradient(circle at top, #e0f2fe 0, #f9fafb 45%, #eef2ff 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
       color: #0f172a;
     }
-    .card {
+
+    .shell {
       width: 100%;
-      max-width: 480px;
+      max-width: 980px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 840px) {
+      .shell {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
       background: #ffffff;
       border-radius: 24px;
-      padding: 24px 22px 20px;
-      box-shadow: 0 20px 50px rgba(15,23,42,0.15);
+      padding: 22px 22px 20px;
+      box-shadow: 0 22px 60px rgba(15,23,42,0.17);
+      position: relative;
+      overflow: hidden;
     }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset-inline-start: -60px;
+      inset-block-start: -80px;
+      width: 180px;
+      height: 180px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(45,212,191,0.15), transparent 60%);
+      pointer-events: none;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .logo-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 30% 20%, #22c55e, #14b8a6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ecfeff;
+      font-weight: 700;
+      font-size: 18px;
+      box-shadow: 0 10px 25px rgba(5,150,105,0.4);
+    }
+
     .title {
       font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 4px;
+      font-weight: 800;
+      margin: 0 0 2px;
     }
+
     .subtitle {
-      font-size: 14px;
+      font-size: 13px;
       color: #64748b;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
+
+    .pill-row {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      margin-bottom: 18px;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px dashed rgba(15,118,110,0.25);
+      color: #0f766e;
+      background: #ecfeff;
+      white-space: nowrap;
+    }
+
+    .pill span {
+      font-weight: 700;
+    }
+
     .field {
       margin-bottom: 14px;
     }
+
     label {
       display: block;
       font-size: 13px;
       margin-bottom: 6px;
       color: #475569;
     }
-    input[type="file"],
-    input[type="email"] {
-      width: 100%;
-      padding: 10px 11px;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      font-size: 13px;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    .dropzone {
+      position: relative;
+      padding: 14px 12px;
+      border-radius: 14px;
+      border: 1px dashed #cbd5f5;
       background: #f8fafc;
-    }
-    input[type="file"]:focus,
-    input[type="email"]:focus {
-      border-color: #0f766e;
-      box-shadow: 0 0 0 1px rgba(15,118,110,0.2);
-      background: #ffffff;
-    }
-    .checkbox-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .dropzone:hover {
+      border-color: #0f766e;
+      background: #f1f5f9;
+      box-shadow: 0 0 0 1px rgba(15,118,110,0.25);
+    }
+
+    .drop-main {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
       font-size: 13px;
-      color: #475569;
-      margin-bottom: 16px;
-      user-select: none;
-      cursor: pointer;
+      color: #0f172a;
     }
-    .checkbox-row input {
-      width: 14px;
-      height: 14px;
-      accent-color: #0f766e;
-      cursor: pointer;
+
+    .drop-hint {
+      font-size: 11px;
+      color: #94a3b8;
     }
+
+    .drop-btn {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
     button {
       width: 100%;
       border: none;
@@ -92,41 +181,123 @@
       justify-content: center;
       gap: 6px;
       transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.15s ease;
-      box-shadow: 0 12px 30px rgba(15,118,110,0.4);
+      box-shadow: 0 14px 32px rgba(15,118,110,0.45);
+      margin-top: 8px;
     }
+
     button:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 16px 40px rgba(15,118,110,0.45);
+      box-shadow: 0 18px 40px rgba(15,118,110,0.5);
     }
+
     button:disabled {
-      opacity: 0.6;
+      opacity: 0.65;
       cursor: default;
       box-shadow: none;
       transform: none;
     }
+
     .status {
-      margin-top: 10px;
+      margin-top: 8px;
       font-size: 12px;
       color: #64748b;
       min-height: 16px;
     }
+
     .status.error {
       color: #b91c1c;
     }
-    .badge-row {
+
+    /* لوحة النتيجة */
+    .result-card {
+      background: #020617;
+      color: #e2e8f0;
+      border-radius: 24px;
+      padding: 20px 20px 18px;
+      box-shadow: 0 22px 60px rgba(15,23,42,0.7);
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .result-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .badge-type {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(15,118,110,0.2);
+      border: 1px solid rgba(34,197,94,0.6);
+      color: #bbf7d0;
+    }
+
+    .metric-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 12px;
-      margin-top: 2px;
+      gap: 10px;
+      margin-bottom: 10px;
     }
-    .badge {
+
+    .metric {
       font-size: 11px;
-      padding: 4px 8px;
+      padding: 6px 9px;
+      border-radius: 12px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.5);
+    }
+
+    .metric span {
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    .result-section-title {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    .result-text {
+      font-size: 11px;
+      line-height: 1.7;
+      color: #e5e7eb;
+      max-height: 132px;
+      overflow: auto;
+      padding-inline-end: 4px;
+    }
+
+    .result-text::-webkit-scrollbar {
+      width: 4px;
+    }
+    .result-text::-webkit-scrollbar-thumb {
+      background: #4b5563;
       border-radius: 999px;
-      background: #ecfeff;
-      color: #0f766e;
-      border: 1px solid rgba(15,118,110,0.12);
+    }
+
+    .result-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 10px;
+      color: #9ca3af;
+    }
+
+    .result-footer button {
+      width: auto;
+      padding-inline: 12px;
+      box-shadow: none;
+      font-size: 11px;
+      margin-top: 0;
     }
   </style>
 
@@ -134,147 +305,311 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLq0qj0b6tVZutF8q/92p1hVdC2R9p+vLS5Xg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
-  <div class="card">
-    <div class="title">مساعد المستندات الذكي</div>
-    <div class="subtitle">ارفع أي ملف (PDF,TXT) وخذ تقرير PDF جاهز بالتحليل والملخص.</div>
-
-    <div class="badge-row">
-      <div class="badge">تحليل CV</div>
-      <div class="badge">ملخص محاضرات</div>
-      <div class="badge">مراجعة أبحاث</div>
-      <div class="badge">تلخيص مستندات</div>
-    </div>
-
-    <form id="docForm">
-      <div class="field">
-        <label for="file">الملف</label>
-        <input type="file" id="file" name="file" required accept=".pdf,.txt" />
+  <div class="shell">
+    <!-- اليسار: الفورم -->
+    <div class="card">
+      <div class="header-row">
+        <div class="logo-badge">AI</div>
+        <div>
+          <p class="title">مساعد المستندات الذكي</p>
+          <p class="subtitle">ارفعي ملف PDF واحد فقط، وخذي تقرير تحليلي جاهز تلقائيًا.</p>
+        </div>
       </div>
 
-      <button type="submit" id="submitBtn">
-        <span id="btnText">تحليل المستند الآن</span>
-        <span id="btnSpinner" style="display:none;">...</span>
-      </button>
+      <div class="pill-row">
+        <div class="pill"><span>CV</span> – تقييم ATS ونصائح</div>
+        <div class="pill"><span>Chapters</span> – تلخيص محاضرات وفصول</div>
+        <div class="pill"><span>Invoices</span> – استخراج أهم بيانات الفاتورة</div>
+      </div>
 
-      <div class="status" id="status"></div>
-    </form>
+      <form id="docForm">
+        <div class="field">
+          <label for="file">الملف (PDF فقط)</label>
+          <label class="dropzone" id="dropzone">
+            <div class="drop-main">
+              <span id="fileLabel">اسحبي ملف الـ PDF هنا أو اضغطي لاختياره</span>
+              <span class="drop-hint">يتم التعرف تلقائيًا إن كان CV أو فصل أو فاتورة.</span>
+            </div>
+            <div class="drop-btn">اختيار ملف</div>
+            <input type="file" id="file" name="file" accept=".pdf" required />
+          </label>
+        </div>
+
+        <button type="submit" id="submitBtn">
+          <span id="btnText">تحليل المستند الآن</span>
+          <span id="btnSpinner" style="display:none;">…</span>
+        </button>
+
+        <div class="status" id="status"></div>
+      </form>
+    </div>
+
+    <!-- اليمين: نتيجة التحليل -->
+    <div class="result-card" id="resultCard" style="opacity:0.35; filter:grayscale(0.4);">
+      <div class="result-header">
+        <div class="result-title">نتيجة التحليل</div>
+        <div class="badge-type" id="resultType">لم يتم التحليل بعد</div>
+      </div>
+
+      <div class="metric-row" id="metricRow">
+        <div class="metric">نوع المستند: —</div>
+        <div class="metric">درجة ATS: —</div>
+        <div class="metric">العناصر المستخرجة: —</div>
+      </div>
+
+      <div class="result-section-title">ملخص مختصر</div>
+      <div class="result-text" id="resultSummary">
+        بعد رفع ملف PDF والضغط على "تحليل المستند الآن" سيظهر هنا ملخص ذكي للمحتوى، مع أهم النقاط والاستخلاصات.
+      </div>
+
+      <div class="result-footer">
+        <span id="resultHint">يتم أيضًا توليد تقرير PDF جاهز للحفظ أو المشاركة.</span>
+        <button type="button" id="downloadAgainBtn" disabled>تحميل التقرير مرة أخرى</button>
+      </div>
+    </div>
   </div>
 
   <script>
+    // 🔗 غيّري هذا بالرابط الحقيقي للـ Webhook (بدون -test)
+    const WEBHOOK_URL = 'https://falshasafey.app.n8n.cloud/webhook/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX';
+
     const form = document.getElementById('docForm');
+    const fileInput = document.getElementById('file');
+    const fileLabel = document.getElementById('fileLabel');
+    const dropzone = document.getElementById('dropzone');
+
     const statusEl = document.getElementById('status');
     const btn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
 
-   
-    const WEBHOOK_URL = 'https://falshasafey.app.n8n.cloud/webhook-test/4bb681f6-fadf-44cc-8ff7-74a23a226c9d';
+    const resultCard = document.getElementById('resultCard');
+    const resultTypeEl = document.getElementById('resultType');
+    const metricRow = document.getElementById('metricRow');
+    const resultSummary = document.getElementById('resultSummary');
+    const resultHint = document.getElementById('resultHint');
+    const downloadAgainBtn = document.getElementById('downloadAgainBtn');
 
-   
-    function mapDocType(type) {
-      switch (type) {
-        case 'cv': return 'سيرة ذاتية (CV)';
-        case 'lecture_notes': return 'ملخص محاضرات / ملاحظات';
-        case 'research_article': return 'بحث أو مقال علمي';
-        case 'business_report': return 'تقرير أو مستند عملي';
-        default: return 'مستند عام';
+    let lastAnalysisData = null;
+
+    function setStatus(text, isError = false) {
+      statusEl.textContent = text || '';
+      statusEl.classList.toggle('error', !!isError);
+    }
+
+    function activateResultCard(active) {
+      if (active) {
+        resultCard.style.opacity = '1';
+        resultCard.style.filter = 'none';
+      } else {
+        resultCard.style.opacity = '0.35';
+        resultCard.style.filter = 'grayscale(0.4)';
       }
     }
 
-    
+    // تحديث UI بناءً على نتيجة التحليل
+    function renderAnalysis(data) {
+      lastAnalysisData = data;
+      activateResultCard(true);
+
+      const type = data.type || 'generic';
+      let typeLabel = 'مستند عام';
+      if (type === 'cv') typeLabel = 'سيرة ذاتية (CV)';
+      if (type === 'chapter') typeLabel = 'فصل / محاضرة';
+      if (type === 'invoice') typeLabel = 'فاتورة';
+
+      resultTypeEl.textContent = typeLabel;
+
+      // بناء الميتريكس
+      metricRow.innerHTML = '';
+
+      const metricType = document.createElement('div');
+      metricType.className = 'metric';
+      metricType.textContent = `نوع المستند: ${typeLabel}`;
+      metricRow.appendChild(metricType);
+
+      if (type === 'cv') {
+        const ats = document.createElement('div');
+        ats.className = 'metric';
+        ats.innerHTML = `<span>ATS Score:</span> ${data.atsScore ?? 'غير محدد'}`;
+        metricRow.appendChild(ats);
+
+        const skillsCount = document.createElement('div');
+        skillsCount.className = 'metric';
+        skillsCount.innerHTML = `<span>مهارات ناقصة:</span> ${data.skillsMissing?.length || 0}`;
+        metricRow.appendChild(skillsCount);
+      }
+
+      if (type === 'chapter') {
+        const kp = document.createElement('div');
+        kp.className = 'metric';
+        kp.innerHTML = `<span>أهم النقاط:</span> ${data.keyPoints?.length || 0}`;
+        metricRow.appendChild(kp);
+      }
+
+      if (type === 'invoice' && data.invoice) {
+        const items = document.createElement('div');
+        items.className = 'metric';
+        items.innerHTML = `<span>عدد العناصر:</span> ${data.invoice.items?.length || 0}`;
+        metricRow.appendChild(items);
+
+        const total = document.createElement('div');
+        total.className = 'metric';
+        total.innerHTML = `<span>المجموع:</span> ${data.invoice.total || '—'}`;
+        metricRow.appendChild(total);
+      }
+
+      // الملخص
+      const summaryText = data.summary || 'لم يرجع الذكاء ملخصًا واضحًا لهذا المستند.';
+      resultSummary.textContent = summaryText;
+
+      resultHint.textContent = 'تم توليد التقرير. بإمكانك حفظ ملف PDF للرجوع لاحقًا.';
+      downloadAgainBtn.disabled = false;
+    }
+
+    // توليد PDF على حسب نوع المستند
     function generatePdfFromAnalysis(data) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
 
-      const marginX = 50;
-      let cursorY = 60;
+      const marginX = 48;
+      let y = 54;
 
-      doc.setFont("Helvetica", "bold");
       doc.setFontSize(18);
-      doc.text("تقرير مساعد المستندات الذكي", marginX, cursorY);
-      cursorY += 26;
+      doc.text("تقرير مساعد المستندات الذكي", marginX, y);
+      y += 28;
 
-      doc.setFont("Helvetica", "normal");
-      doc.setFontSize(12);
+      doc.setFontSize(11);
 
-      const docTypeLine = "نوع المستند: " + mapDocType(data.docType || "generic");
-      const purposeLine = data.mainPurpose ? "هدف المستند: " + data.mainPurpose : "";
+      const type = data.type || 'generic';
+      let typeLabel = 'مستند عام';
+      if (type === 'cv') typeLabel = 'سيرة ذاتية (CV)';
+      if (type === 'chapter') typeLabel = 'فصل / محاضرة';
+      if (type === 'invoice') typeLabel = 'فاتورة';
 
-      let text = docTypeLine + "\n";
-      if (purposeLine) text += purposeLine + "\n\n";
+      doc.text(`نوع المستند: ${typeLabel}`, marginX, y);
+      y += 18;
 
-      if (data.summary) {
-        text += "الملخص:\n" + data.summary + "\n\n";
-      }
+      if (type === 'cv') {
+        if (data.atsScore != null) {
+          doc.text(`ATS Score: ${data.atsScore}`, marginX, y);
+          y += 18;
+        }
+        doc.text("الملخص:", marginX, y); y += 14;
+        doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y); y += 60;
 
-      if (Array.isArray(data.keyPoints) && data.keyPoints.length) {
-        text += "أهم النقاط:\n";
-        data.keyPoints.forEach((p, idx) => {
-          text += `- ${p}\n`;
+        doc.text("المهارات الناقصة:", marginX, y); y += 14;
+        (data.skillsMissing || []).forEach(s => {
+          doc.text(`- ${s}`, marginX, y); y += 14;
         });
-        text += "\n";
-      }
+        y += 10;
 
-      if (Array.isArray(data.suggestions) && data.suggestions.length) {
-        text += "اقتراحات وتحسينات:\n";
-        data.suggestions.forEach((s) => {
-          text += `- ${s}\n`;
+        doc.text("اقتراحات للتحسين:", marginX, y); y += 14;
+        (data.suggestions || []).forEach(s => {
+          doc.text(`- ${s}`, marginX, y); y += 14;
         });
-      }
+      } else if (type === 'chapter') {
+        doc.text("الملخص:", marginX, y); y += 14;
+        doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y); y += 60;
 
-      const lines = doc.splitTextToSize(text, 500);
-      doc.text(lines, marginX, cursorY, { align: "right" });
+        doc.text("أهم النقاط:", marginX, y); y += 14;
+        (data.keyPoints || []).forEach(p => {
+          doc.text(`- ${p}`, marginX, y); y += 14;
+        });
+        y += 10;
+
+        doc.text("اقتراحات:", marginX, y); y += 14;
+        (data.suggestions || []).forEach(s => {
+          doc.text(`- ${s}`, marginX, y); y += 14;
+        });
+      } else if (type === 'invoice' && data.invoice) {
+        const inv = data.invoice;
+
+        doc.text(`البائع: ${inv.seller || "—"}`, marginX, y); y += 16;
+        doc.text(`المشتري: ${inv.buyer || "—"}`, marginX, y); y += 16;
+        doc.text(`التاريخ: ${inv.date || "—"}`, marginX, y); y += 22;
+
+        doc.text("العناصر:", marginX, y); y += 14;
+        (inv.items || []).forEach(it => {
+          doc.text(`- ${it}`, marginX, y); y += 14;
+        });
+        y += 10;
+
+        doc.text(`المجموع: ${inv.total || "—"}`, marginX, y); y += 16;
+        doc.text(`الضريبة: ${inv.tax || "—"}`, marginX, y); y += 18;
+
+        if (inv.notes) {
+          doc.text("ملاحظات:", marginX, y); y += 14;
+          doc.text(doc.splitTextToSize(inv.notes, 500), marginX, y);
+        }
+      } else {
+        doc.text("ملخص:", marginX, y); y += 14;
+        doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y);
+      }
 
       doc.save("smart-document-report.pdf");
     }
 
+    // اختيار الملف
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files[0]) {
+        fileLabel.textContent = fileInput.files[0].name;
+      } else {
+        fileLabel.textContent = "اسحبي ملف الـ PDF هنا أو اضغطي لاختياره";
+      }
+    });
+
+    // إعادة تحميل التقرير
+    downloadAgainBtn.addEventListener('click', () => {
+      if (lastAnalysisData) generatePdfFromAnalysis(lastAnalysisData);
+    });
+
+    // إرسال النموذج
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      statusEl.textContent = '';
-      statusEl.classList.remove('error');
-
-      const fileInput = document.getElementById('file');
+      setStatus('');
       if (!fileInput.files || fileInput.files.length === 0) {
-        statusEl.textContent = 'حمّلي ملف أول.';
-        statusEl.classList.add('error');
+        setStatus('اختاري ملف PDF أولاً.', true);
         return;
       }
 
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
 
-      const email = document.getElementById('email').value.trim();
-      const sendEmail = document.getElementById('sendEmail').checked;
-
-      if (email) formData.append('email', email);
-      if (sendEmail) formData.append('sendEmail', 'on');
-
       btn.disabled = true;
       btnText.textContent = 'جاري التحليل...';
       btnSpinner.style.display = 'inline-block';
-      statusEl.textContent = 'قد يستغرق الأمر ثوانٍ حسب حجم الملف.';
+      setStatus('قد يستغرق التحليل عدة ثوانٍ حسب حجم الملف.');
 
       try {
-        const res = await fetch(WEBHOOK_URL, {
+        const res = await fetch(https://falshasafey.app.n8n.cloud/webhook/4bb681f6-fadf-44cc-8ff7-74a23a226c9d, {
           method: 'POST',
           body: formData
         });
 
+        const raw = await res.text();
+        console.log('RAW STATUS', res.status);
+        console.log('RAW BODY', raw.slice(0, 300));
+
         if (!res.ok) {
-          throw new Error('خطأ في السيرفر');
+          throw new Error(`خطأ في السيرفر (${res.status}).`);
         }
 
-    
-        const data = await res.json();
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          throw new Error('الرد من السيرفر ليس JSON صالح.');
+        }
 
-       
+        renderAnalysis(data);
         generatePdfFromAnalysis(data);
-
-        statusEl.textContent = 'تم توليد التقرير وتحميله. (لو حطيت إيميل ممكن يوصلك نسخة إضافية)';
+        setStatus('تم توليد التقرير بنجاح.');
       } catch (err) {
         console.error(err);
-        statusEl.textContent = 'صار خطأ أثناء التحليل. تأكد من الرابط أو جرب ملف أصغر.';
-        statusEl.classList.add('error');
+        setStatus(err.message || 'صار خطأ أثناء التحليل.', true);
       } finally {
         btn.disabled = false;
         btnText.textContent = 'تحليل المستند الآن';
