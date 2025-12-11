@@ -94,6 +94,7 @@
       border-radius: 999px;
       background: #f1f5f9;
       margin-bottom: 18px;
+      flex-wrap: wrap;
     }
 
     .pill {
@@ -160,6 +161,7 @@
       border-radius: 999px;
       background: #0f172a;
       color: #e2e8f0;
+      white-space: nowrap;
     }
 
     input[type="file"] {
@@ -208,7 +210,6 @@
       color: #b91c1c;
     }
 
-    /* لوحة النتيجة */
     .result-card {
       background: #020617;
       color: #e2e8f0;
@@ -301,12 +302,12 @@
     }
   </style>
 
-  <!-- jsPDF CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLq0qj0b6tVZutF8q/92p1hVdC2R9p+vLS5Xg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="shell">
-    <!-- اليسار: الفورم -->
+    <!-- الفورم -->
     <div class="card">
       <div class="header-row">
         <div class="logo-badge">AI</div>
@@ -324,16 +325,16 @@
 
       <form id="docForm">
         <div class="field">
-  <label for="file">الملف (PDF فقط)</label>
-  <label class="dropzone" id="dropzone">
-    <div class="drop-main">
-      <span id="fileLabel">اسحبي ملف الـ PDF هنا أو اضغطي لاختياره</span>
-      <span class="drop-hint">يتم التعرف تلقائيًا إن كان CV أو فصل أو فاتورة.</span>
-    </div>
-    <div class="drop-btn">اختيار ملف</div>
-    <input type="file" id="file" name="file" accept=".pdf" required />
-  </label>
-</div>
+          <label for="file">الملف (PDF فقط)</label>
+          <div class="dropzone" id="dropzone">
+            <div class="drop-main">
+              <span id="fileLabel">اسحبي ملف الـ PDF هنا أو اضغطي لاختياره</span>
+              <span class="drop-hint">يتم التعرف تلقائيًا إن كان CV أو فصل أو فاتورة.</span>
+            </div>
+            <div class="drop-btn">اختيار ملف</div>
+            <input type="file" id="file" name="file" accept=".pdf" />
+          </div>
+        </div>
 
         <button type="submit" id="submitBtn">
           <span id="btnText">تحليل المستند الآن</span>
@@ -344,7 +345,7 @@
       </form>
     </div>
 
-    <!-- اليمين: نتيجة التحليل -->
+    <!-- النتيجة -->
     <div class="result-card" id="resultCard" style="opacity:0.35; filter:grayscale(0.4);">
       <div class="result-header">
         <div class="result-title">نتيجة التحليل</div>
@@ -359,290 +360,266 @@
 
       <div class="result-section-title">ملخص مختصر</div>
       <div class="result-text" id="resultSummary">
-        بعد رفع ملف PDF والضغط على "تحليل المستند الآن" سيظهر هنا ملخص ذكي للمحتوى، مع أهم النقاط والاستخلاصات.
+        بعد رفع ملف PDF والضغط على "تحليل المستند الآن" سيظهر هنا ملخص ذكي للمحتوى.
       </div>
 
       <div class="result-footer">
-        <span id="resultHint">يتم أيضًا توليد تقرير PDF جاهز للحفظ أو المشاركة.</span>
+        <span id="resultHint">سيتم توليد تقرير PDF جاهز للحفظ أو المشاركة.</span>
         <button type="button" id="downloadAgainBtn" disabled>تحميل التقرير مرة أخرى</button>
       </div>
     </div>
   </div>
 
-<script>
-  // رابط الـ Webhook (Production) من n8n
-  const WEBHOOK_URL = 'https://falshasafey.app.n8n.cloud/webhook/4bb681f6-fadf-44cc-8ff7-74a23a226c9d';
+  <script>
+    // ثبتي إن السكربت اشتغل
+    console.log("Smart Doc Assistant script loaded ✅");
 
-  const form = document.getElementById('docForm');
-  const fileInput = document.getElementById('file');
-  const fileLabel = document.getElementById('fileLabel');
-  const dropzone = document.getElementById('dropzone');
+    const WEBHOOK_URL = "https://falshasafey.app.n8n.cloud/webhook/4bb681f6-fadf-44cc-8ff7-74a23a226c9d";
 
-  const statusEl = document.getElementById('status');
-  const btn = document.getElementById('submitBtn');
-  const btnText = document.getElementById('btnText');
-  const btnSpinner = document.getElementById('btnSpinner');
+    const form = document.getElementById("docForm");
+    const fileInput = document.getElementById("file");
+    const fileLabel = document.getElementById("fileLabel");
+    const dropzone = document.getElementById("dropzone");
 
-  const resultCard = document.getElementById('resultCard');
-  const resultTypeEl = document.getElementById('resultType');
-  const metricRow = document.getElementById('metricRow');
-  const resultSummary = document.getElementById('resultSummary');
-  const resultHint = document.getElementById('resultHint');
-  const downloadAgainBtn = document.getElementById('downloadAgainBtn');
+    const statusEl = document.getElementById("status");
+    const btn = document.getElementById("submitBtn");
+    const btnText = document.getElementById("btnText");
+    const btnSpinner = document.getElementById("btnSpinner");
 
-  let lastAnalysisData = null;
+    const resultCard = document.getElementById("resultCard");
+    const resultTypeEl = document.getElementById("resultType");
+    const metricRow = document.getElementById("metricRow");
+    const resultSummary = document.getElementById("resultSummary");
+    const resultHint = document.getElementById("resultHint");
+    const downloadAgainBtn = document.getElementById("downloadAgainBtn");
 
-  function setStatus(text, isError = false) {
-    statusEl.textContent = text || '';
-    statusEl.classList.toggle('error', !!isError);
-  }
+    let lastAnalysisData = null;
 
-  function activateResultCard(active) {
-    if (active) {
-      resultCard.style.opacity = '1';
-      resultCard.style.filter = 'none';
-    } else {
-      resultCard.style.opacity = '0.35';
-      resultCard.style.filter = 'grayscale(0.4)';
-    }
-  }
-
-  // ---------- UI: اختيار الملف ----------
-
-  // فتح الـ file picker لما نضغط على الدروب زون
-  dropzone.addEventListener('click', (e) => {
-    if (e.target === fileInput) return;
-    fileInput.click();
-  });
-
-  // تحديث النص + التأكد إنه PDF
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
-
-    if (!file) {
-      fileLabel.textContent = 'اسحبي ملف الـ PDF هنا أو اضغطي لاختياره';
-      return;
+    function setStatus(text, isError) {
+      statusEl.textContent = text || "";
+      statusEl.classList.toggle("error", !!isError);
     }
 
-    const isPdf =
-      file.type === 'application/pdf' ||
-      file.name.toLowerCase().endsWith('.pdf');
-
-    if (!isPdf) {
-      setStatus('الملف لازم يكون PDF فقط.', true);
-      fileInput.value = '';
-      fileLabel.textContent = 'اسحبي ملف الـ PDF هنا أو اضغطي لاختياره';
-      return;
-    }
-
-    setStatus('');
-    fileLabel.textContent = file.name;
-  });
-
-  // ---------- UI: عرض نتيجة التحليل ----------
-
-  function renderAnalysis(data) {
-    lastAnalysisData = data;
-    activateResultCard(true);
-
-    const type = data.type || 'generic';
-    let typeLabel = 'مستند عام';
-    if (type === 'cv') typeLabel = 'سيرة ذاتية (CV)';
-    if (type === 'chapter') typeLabel = 'فصل / محاضرة';
-    if (type === 'invoice') typeLabel = 'فاتورة';
-
-    resultTypeEl.textContent = typeLabel;
-
-    // الميتريكس
-    metricRow.innerHTML = '';
-
-    const metricType = document.createElement('div');
-    metricType.className = 'metric';
-    metricType.textContent = `نوع المستند: ${typeLabel}`;
-    metricRow.appendChild(metricType);
-
-    if (type === 'cv') {
-      const ats = document.createElement('div');
-      ats.className = 'metric';
-      ats.innerHTML = `<span>ATS Score:</span> ${data.atsScore ?? 'غير محدد'}`;
-      metricRow.appendChild(ats);
-
-      const skillsCount = document.createElement('div');
-      skillsCount.className = 'metric';
-      skillsCount.innerHTML = `<span>مهارات ناقصة:</span> ${data.skillsMissing?.length || 0}`;
-      metricRow.appendChild(skillsCount);
-    }
-
-    if (type === 'chapter') {
-      const kp = document.createElement('div');
-      kp.className = 'metric';
-      kp.innerHTML = `<span>أهم النقاط:</span> ${data.keyPoints?.length || 0}`;
-      metricRow.appendChild(kp);
-    }
-
-    if (type === 'invoice' && data.invoice) {
-      const items = document.createElement('div');
-      items.className = 'metric';
-      items.innerHTML = `<span>عدد العناصر:</span> ${data.invoice.items?.length || 0}`;
-      metricRow.appendChild(items);
-
-      const total = document.createElement('div');
-      total.className = 'metric';
-      total.innerHTML = `<span>المجموع:</span> ${data.invoice.total || '—'}`;
-      metricRow.appendChild(total);
-    }
-
-    const summaryText = data.summary || 'لم يرجع الذكاء ملخصًا واضحًا لهذا المستند.';
-    resultSummary.textContent = summaryText;
-
-    resultHint.textContent = 'تم توليد التقرير. بإمكانك حفظ ملف PDF للرجوع لاحقًا.';
-    downloadAgainBtn.disabled = false;
-  }
-
-  // ---------- توليد PDF محليًا ----------
-
-  function generatePdfFromAnalysis(data) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
-
-    const marginX = 48;
-    let y = 54;
-
-    doc.setFontSize(18);
-    doc.text("تقرير مساعد المستندات الذكي", marginX, y);
-    y += 28;
-
-    doc.setFontSize(11);
-
-    const type = data.type || 'generic';
-    let typeLabel = 'مستند عام';
-    if (type === 'cv') typeLabel = 'سيرة ذاتية (CV)';
-    if (type === 'chapter') typeLabel = 'فصل / محاضرة';
-    if (type === 'invoice') typeLabel = 'فاتورة';
-
-    doc.text(`نوع المستند: ${typeLabel}`, marginX, y);
-    y += 18;
-
-    if (type === 'cv') {
-      if (data.atsScore != null) {
-        doc.text(`ATS Score: ${data.atsScore}`, marginX, y);
-        y += 18;
+    function activateResultCard(active) {
+      if (active) {
+        resultCard.style.opacity = "1";
+        resultCard.style.filter = "none";
+      } else {
+        resultCard.style.opacity = "0.35";
+        resultCard.style.filter = "grayscale(0.4)";
       }
-      doc.text("الملخص:", marginX, y); y += 14;
-      doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y); y += 60;
+    }
 
-      doc.text("المهارات الناقصة:", marginX, y); y += 14;
-      (data.skillsMissing || []).forEach(s => {
-        doc.text(`- ${s}`, marginX, y); y += 14;
-      });
-      y += 10;
+    function mapType(type) {
+      if (type === "cv") return "سيرة ذاتية (CV)";
+      if (type === "chapter") return "فصل / محاضرة";
+      if (type === "invoice") return "فاتورة";
+      return "مستند عام";
+    }
 
-      doc.text("اقتراحات للتحسين:", marginX, y); y += 14;
-      (data.suggestions || []).forEach(s => {
-        doc.text(`- ${s}`, marginX, y); y += 14;
-      });
+    function renderAnalysis(data) {
+      lastAnalysisData = data;
+      activateResultCard(true);
 
-    } else if (type === 'chapter') {
-      doc.text("الملخص:", marginX, y); y += 14;
-      doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y); y += 60;
+      const type = data.type || "generic";
+      const typeLabel = mapType(type);
 
-      doc.text("أهم النقاط:", marginX, y); y += 14;
-      (data.keyPoints || []).forEach(p => {
-        doc.text(`- ${p}`, marginX, y); y += 14;
-      });
-      y += 10;
+      resultTypeEl.textContent = typeLabel;
+      metricRow.innerHTML = "";
 
-      doc.text("اقتراحات:", marginX, y); y += 14;
-      (data.suggestions || []).forEach(s => {
-        doc.text(`- ${s}`, marginX, y); y += 14;
-      });
+      const metricType = document.createElement("div");
+      metricType.className = "metric";
+      metricType.textContent = "نوع المستند: " + typeLabel;
+      metricRow.appendChild(metricType);
 
-    } else if (type === 'invoice' && data.invoice) {
-      const inv = data.invoice;
+      if (type === "cv") {
+        const ats = document.createElement("div");
+        ats.className = "metric";
+        ats.innerHTML = "<span>ATS Score:</span> " + (data.atsScore ?? "غير محدد");
+        metricRow.appendChild(ats);
 
-      doc.text(`البائع: ${inv.seller || "—"}`, marginX, y); y += 16;
-      doc.text(`المشتري: ${inv.buyer || "—"}`, marginX, y); y += 16;
-      doc.text(`التاريخ: ${inv.date || "—"}`, marginX, y); y += 22;
-
-      doc.text("العناصر:", marginX, y); y += 14;
-      (inv.items || []).forEach(it => {
-        doc.text(`- ${it}`, marginX, y); y += 14;
-      });
-      y += 10;
-
-      doc.text(`المجموع: ${inv.total || "—"}`, marginX, y); y += 16;
-      doc.text(`الضريبة: ${inv.tax || "—"}`, marginX, y); y += 18;
-
-      if (inv.notes) {
-        doc.text("ملاحظات:", marginX, y); y += 14;
-        doc.text(doc.splitTextToSize(inv.notes, 500), marginX, y);
+        const missing = document.createElement("div");
+        missing.className = "metric";
+        const count = (data.skillsMissing && data.skillsMissing.length) || 0;
+        missing.innerHTML = "<span>مهارات ناقصة:</span> " + count;
+        metricRow.appendChild(missing);
       }
 
-    } else {
-      doc.text("ملخص:", marginX, y); y += 14;
-      doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y);
-    }
-
-    doc.save("smart-document-report.pdf");
-  }
-
-  // زر تحميل التقرير مرة أخرى
-  downloadAgainBtn.addEventListener('click', () => {
-    if (lastAnalysisData) generatePdfFromAnalysis(lastAnalysisData);
-  });
-
-  // ---------- إرسال النموذج ----------
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    setStatus('');
-
-    if (!fileInput.files || fileInput.files.length === 0) {
-      setStatus('اختاري ملف PDF أولاً.', true);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]); // لازم في n8n يكون Binary Property = file
-
-    btn.disabled = true;
-    btnText.textContent = 'جاري التحليل...';
-    btnSpinner.style.display = 'inline-block';
-    setStatus('قد يستغرق التحليل عدة ثوانٍ حسب حجم الملف.');
-
-    try {
-      const res = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        body: formData
-      });
-
-      const raw = await res.text();
-      console.log('RAW STATUS', res.status);
-      console.log('RAW BODY', raw.slice(0, 300));
-
-      if (!res.ok) {
-        throw new Error(`خطأ في السيرفر (${res.status}).`);
+      if (type === "chapter") {
+        const kp = document.createElement("div");
+        kp.className = "metric";
+        const count = (data.keyPoints && data.keyPoints.length) || 0;
+        kp.innerHTML = "<span>أهم النقاط:</span> " + count;
+        metricRow.appendChild(kp);
       }
 
-      let data;
+      if (type === "invoice" && data.invoice) {
+        const inv = data.invoice;
+        const items = document.createElement("div");
+        items.className = "metric";
+        items.innerHTML = "<span>عدد العناصر:</span> " + ((inv.items && inv.items.length) || 0);
+        metricRow.appendChild(items);
+
+        const total = document.createElement("div");
+        total.className = "metric";
+        total.innerHTML = "<span>المجموع:</span> " + (inv.total || "—");
+        metricRow.appendChild(total);
+      }
+
+      resultSummary.textContent = data.summary || "لم يرجع الذكاء ملخصًا واضحًا لهذا المستند.";
+      resultHint.textContent = "تم توليد التقرير. بإمكانك حفظ ملف PDF للرجوع لاحقًا.";
+      downloadAgainBtn.disabled = false;
+    }
+
+    function generatePdfFromAnalysis(data) {
+      const jsPDF = window.jspdf && window.jspdf.jsPDF;
+      if (!jsPDF) {
+        console.warn("jsPDF not loaded");
+        return;
+      }
+
+      const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
+      const marginX = 48;
+      let y = 54;
+
+      doc.setFontSize(18);
+      doc.text("تقرير مساعد المستندات الذكي", marginX, y);
+      y += 28;
+
+      doc.setFontSize(11);
+
+      const type = data.type || "generic";
+      const typeLabel = mapType(type);
+
+      doc.text("نوع المستند: " + typeLabel, marginX, y);
+      y += 18;
+
+      function addParagraph(title, text) {
+        if (!text) return;
+        doc.text(title, marginX, y);
+        y += 14;
+        const lines = doc.splitTextToSize(text, 500);
+        doc.text(lines, marginX, y);
+        y += lines.length * 14 + 14;
+      }
+
+      if (type === "cv") {
+        if (data.atsScore != null) {
+          doc.text("ATS Score: " + data.atsScore, marginX, y);
+          y += 18;
+        }
+        addParagraph("الملخص:", data.summary || "");
+
+        if (data.skillsMissing && data.skillsMissing.length) {
+          addParagraph("المهارات الناقصة:", data.skillsMissing.map(s => "- " + s).join("\n"));
+        }
+
+        if (data.suggestions && data.suggestions.length) {
+          addParagraph("اقتراحات للتحسين:", data.suggestions.map(s => "- " + s).join("\n"));
+        }
+      } else if (type === "chapter") {
+        addParagraph("الملخص:", data.summary || "");
+        if (data.keyPoints && data.keyPoints.length) {
+          addParagraph("أهم النقاط:", data.keyPoints.map(p => "- " + p).join("\n"));
+        }
+        if (data.suggestions && data.suggestions.length) {
+          addParagraph("اقتراحات:", data.suggestions.map(s => "- " + s).join("\n"));
+        }
+      } else if (type === "invoice" && data.invoice) {
+        const inv = data.invoice;
+        addParagraph("بيانات الفاتورة:", 
+          "البائع: " + (inv.seller || "—") + "\n" +
+          "المشتري: " + (inv.buyer || "—") + "\n" +
+          "التاريخ: " + (inv.date || "—")
+        );
+
+        if (inv.items && inv.items.length) {
+          addParagraph("العناصر:", inv.items.map(it => "- " + it).join("\n"));
+        }
+
+        addParagraph("المبالغ:", 
+          "المجموع: " + (inv.total || "—") + "\n" +
+          "الضريبة: " + (inv.tax || "—")
+        );
+
+        if (inv.notes) {
+          addParagraph("ملاحظات:", inv.notes);
+        }
+      } else {
+        addParagraph("الملخص:", data.summary || "");
+      }
+
+      doc.save("smart-document-report.pdf");
+    }
+
+    // اختيار الملف
+    dropzone.addEventListener("click", function () {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function () {
+      if (fileInput.files && fileInput.files[0]) {
+        fileLabel.textContent = fileInput.files[0].name;
+      } else {
+        fileLabel.textContent = "اسحبي ملف الـ PDF هنا أو اضغطي لاختياره";
+      }
+    });
+
+    downloadAgainBtn.addEventListener("click", function () {
+      if (lastAnalysisData) generatePdfFromAnalysis(lastAnalysisData);
+    });
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      setStatus("");
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        setStatus("اختاري ملف PDF أولاً.", true);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      btn.disabled = true;
+      btnText.textContent = "جاري التحليل...";
+      btnSpinner.style.display = "inline-block";
+      setStatus("قد يستغرق التحليل عدة ثوانٍ حسب حجم الملف.");
+
       try {
-        data = JSON.parse(raw);
-      } catch (_) {
-        throw new Error('الرد من السيرفر ليس JSON صالح.');
-      }
+        const res = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          body: formData
+        });
 
-      renderAnalysis(data);
-      generatePdfFromAnalysis(data);
-      setStatus('تم توليد التقرير بنجاح.');
-    } catch (err) {
-      console.error(err);
-      setStatus(err.message || 'صار خطأ أثناء التحليل.', true);
-    } finally {
-      btn.disabled = false;
-      btnText.textContent = 'تحليل المستند الآن';
-      btnSpinner.style.display = 'none';
-    }
-  });
-</script>
+        const raw = await res.text();
+        console.log("RAW STATUS", res.status);
+        console.log("RAW BODY", raw.slice(0, 200));
+
+        if (!res.ok) {
+          throw new Error("خطأ في السيرفر (" + res.status + ")");
+        }
+
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          console.error("JSON parse error", e);
+          throw new Error("الرد من السيرفر ليس JSON صالح.");
+        }
+
+        renderAnalysis(data);
+        generatePdfFromAnalysis(data);
+        setStatus("تم توليد التقرير بنجاح.");
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message || "صار خطأ أثناء التحليل.", true);
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = "تحليل المستند الآن";
+        btnSpinner.style.display = "none";
+      }
+    });
+  </script>
 </body>
 </html>
