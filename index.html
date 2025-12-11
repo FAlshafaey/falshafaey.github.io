@@ -129,6 +129,9 @@
       border: 1px solid rgba(15,118,110,0.12);
     }
   </style>
+
+  <!-- jsPDF CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLq0qj0b6tVZutF8q/92p1hVdC2R9p+vLS5Xg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
   <div class="card">
@@ -174,7 +177,66 @@
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
 
-    const WEBHOOK_URL = 'https://falshasafey.app.n8n.cloud/webhook-test/4bb681f6-fadf-44cc-8ff7-74a23a226c9d'; // حطي رابط Webhook من n8n
+   
+    const WEBHOOK_URL = 'https://falshasafey.app.n8n.cloud/webhook-test/4bb681f6-fadf-44cc-8ff7-74a23a226c9d';
+
+   
+    function mapDocType(type) {
+      switch (type) {
+        case 'cv': return 'سيرة ذاتية (CV)';
+        case 'lecture_notes': return 'ملخص محاضرات / ملاحظات';
+        case 'research_article': return 'بحث أو مقال علمي';
+        case 'business_report': return 'تقرير أو مستند عملي';
+        default: return 'مستند عام';
+      }
+    }
+
+    
+    function generatePdfFromAnalysis(data) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
+
+      const marginX = 50;
+      let cursorY = 60;
+
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("تقرير مساعد المستندات الذكي", marginX, cursorY);
+      cursorY += 26;
+
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(12);
+
+      const docTypeLine = "نوع المستند: " + mapDocType(data.docType || "generic");
+      const purposeLine = data.mainPurpose ? "هدف المستند: " + data.mainPurpose : "";
+
+      let text = docTypeLine + "\n";
+      if (purposeLine) text += purposeLine + "\n\n";
+
+      if (data.summary) {
+        text += "الملخص:\n" + data.summary + "\n\n";
+      }
+
+      if (Array.isArray(data.keyPoints) && data.keyPoints.length) {
+        text += "أهم النقاط:\n";
+        data.keyPoints.forEach((p, idx) => {
+          text += `- ${p}\n`;
+        });
+        text += "\n";
+      }
+
+      if (Array.isArray(data.suggestions) && data.suggestions.length) {
+        text += "اقتراحات وتحسينات:\n";
+        data.suggestions.forEach((s) => {
+          text += `- ${s}\n`;
+        });
+      }
+
+      const lines = doc.splitTextToSize(text, 500);
+      doc.text(lines, marginX, cursorY, { align: "right" });
+
+      doc.save("smart-document-report.pdf");
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -212,16 +274,11 @@
           throw new Error('خطأ في السيرفر');
         }
 
-        // نتوقع PDF مباشرة من الـ Webhook
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'smart-document-report.pdf';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
+    
+        const data = await res.json();
+
+       
+        generatePdfFromAnalysis(data);
 
         statusEl.textContent = 'تم توليد التقرير وتحميله. (لو حطيت إيميل ممكن يوصلك نسخة إضافية)';
       } catch (err) {
