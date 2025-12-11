@@ -324,16 +324,16 @@
 
       <form id="docForm">
         <div class="field">
-          <label for="file">الملف (PDF فقط)</label>
-          <label class="dropzone" id="dropzone">
-            <div class="drop-main">
-              <span id="fileLabel">اسحبي ملف الـ PDF هنا أو اضغطي لاختياره</span>
-              <span class="drop-hint">يتم التعرف تلقائيًا إن كان CV أو فصل أو فاتورة.</span>
-            </div>
-            <div class="drop-btn">اختيار ملف</div>
-            <input type="file" id="file" name="file" accept=".pdf" required />
-          </label>
-        </div>
+  <label for="file">الملف (PDF فقط)</label>
+  <label class="dropzone" id="dropzone">
+    <div class="drop-main">
+      <span id="fileLabel">اسحبي ملف الـ PDF هنا أو اضغطي لاختياره</span>
+      <span class="drop-hint">يتم التعرف تلقائيًا إن كان CV أو فصل أو فاتورة.</span>
+    </div>
+    <div class="drop-btn">اختيار ملف</div>
+    <input type="file" id="file" name="file" accept=".pdf" required />
+  </label>
+</div>
 
         <button type="submit" id="submitBtn">
           <span id="btnText">تحليل المستند الآن</span>
@@ -369,253 +369,280 @@
     </div>
   </div>
 
-  <script>
-    // 🔗 غيّري هذا بالرابط الحقيقي للـ Webhook (بدون -test)
-    const WEBHOOK_URL = 'https://falshasafey.app.n8n.cloud/webhook/4bb681f6-fadf-44cc-8ff7-74a23a226c9d';
+<script>
+  // رابط الـ Webhook (Production) من n8n
+  const WEBHOOK_URL = 'https://falshasafey.app.n8n.cloud/webhook/4bb681f6-fadf-44cc-8ff7-74a23a226c9d';
 
-    const form = document.getElementById('docForm');
-    const fileInput = document.getElementById('file');
-    const fileLabel = document.getElementById('fileLabel');
-    const dropzone = document.getElementById('dropzone');
+  const form = document.getElementById('docForm');
+  const fileInput = document.getElementById('file');
+  const fileLabel = document.getElementById('fileLabel');
+  const dropzone = document.getElementById('dropzone');
 
-    const statusEl = document.getElementById('status');
-    const btn = document.getElementById('submitBtn');
-    const btnText = document.getElementById('btnText');
-    const btnSpinner = document.getElementById('btnSpinner');
+  const statusEl = document.getElementById('status');
+  const btn = document.getElementById('submitBtn');
+  const btnText = document.getElementById('btnText');
+  const btnSpinner = document.getElementById('btnSpinner');
 
-    const resultCard = document.getElementById('resultCard');
-    const resultTypeEl = document.getElementById('resultType');
-    const metricRow = document.getElementById('metricRow');
-    const resultSummary = document.getElementById('resultSummary');
-    const resultHint = document.getElementById('resultHint');
-    const downloadAgainBtn = document.getElementById('downloadAgainBtn');
+  const resultCard = document.getElementById('resultCard');
+  const resultTypeEl = document.getElementById('resultType');
+  const metricRow = document.getElementById('metricRow');
+  const resultSummary = document.getElementById('resultSummary');
+  const resultHint = document.getElementById('resultHint');
+  const downloadAgainBtn = document.getElementById('downloadAgainBtn');
 
-    let lastAnalysisData = null;
+  let lastAnalysisData = null;
 
-    function setStatus(text, isError = false) {
-      statusEl.textContent = text || '';
-      statusEl.classList.toggle('error', !!isError);
+  function setStatus(text, isError = false) {
+    statusEl.textContent = text || '';
+    statusEl.classList.toggle('error', !!isError);
+  }
+
+  function activateResultCard(active) {
+    if (active) {
+      resultCard.style.opacity = '1';
+      resultCard.style.filter = 'none';
+    } else {
+      resultCard.style.opacity = '0.35';
+      resultCard.style.filter = 'grayscale(0.4)';
+    }
+  }
+
+  // ---------- UI: اختيار الملف ----------
+
+  // فتح الـ file picker لما نضغط على الدروب زون
+  dropzone.addEventListener('click', (e) => {
+    if (e.target === fileInput) return;
+    fileInput.click();
+  });
+
+  // تحديث النص + التأكد إنه PDF
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+
+    if (!file) {
+      fileLabel.textContent = 'اسحبي ملف الـ PDF هنا أو اضغطي لاختياره';
+      return;
     }
 
-    function activateResultCard(active) {
-      if (active) {
-        resultCard.style.opacity = '1';
-        resultCard.style.filter = 'none';
-      } else {
-        resultCard.style.opacity = '0.35';
-        resultCard.style.filter = 'grayscale(0.4)';
-      }
+    const isPdf =
+      file.type === 'application/pdf' ||
+      file.name.toLowerCase().endsWith('.pdf');
+
+    if (!isPdf) {
+      setStatus('الملف لازم يكون PDF فقط.', true);
+      fileInput.value = '';
+      fileLabel.textContent = 'اسحبي ملف الـ PDF هنا أو اضغطي لاختياره';
+      return;
     }
 
-    // تحديث UI بناءً على نتيجة التحليل
-    function renderAnalysis(data) {
-      lastAnalysisData = data;
-      activateResultCard(true);
+    setStatus('');
+    fileLabel.textContent = file.name;
+  });
 
-      const type = data.type || 'generic';
-      let typeLabel = 'مستند عام';
-      if (type === 'cv') typeLabel = 'سيرة ذاتية (CV)';
-      if (type === 'chapter') typeLabel = 'فصل / محاضرة';
-      if (type === 'invoice') typeLabel = 'فاتورة';
+  // ---------- UI: عرض نتيجة التحليل ----------
 
-      resultTypeEl.textContent = typeLabel;
+  function renderAnalysis(data) {
+    lastAnalysisData = data;
+    activateResultCard(true);
 
-      // بناء الميتريكس
-      metricRow.innerHTML = '';
+    const type = data.type || 'generic';
+    let typeLabel = 'مستند عام';
+    if (type === 'cv') typeLabel = 'سيرة ذاتية (CV)';
+    if (type === 'chapter') typeLabel = 'فصل / محاضرة';
+    if (type === 'invoice') typeLabel = 'فاتورة';
 
-      const metricType = document.createElement('div');
-      metricType.className = 'metric';
-      metricType.textContent = `نوع المستند: ${typeLabel}`;
-      metricRow.appendChild(metricType);
+    resultTypeEl.textContent = typeLabel;
 
-      if (type === 'cv') {
-        const ats = document.createElement('div');
-        ats.className = 'metric';
-        ats.innerHTML = `<span>ATS Score:</span> ${data.atsScore ?? 'غير محدد'}`;
-        metricRow.appendChild(ats);
+    // الميتريكس
+    metricRow.innerHTML = '';
 
-        const skillsCount = document.createElement('div');
-        skillsCount.className = 'metric';
-        skillsCount.innerHTML = `<span>مهارات ناقصة:</span> ${data.skillsMissing?.length || 0}`;
-        metricRow.appendChild(skillsCount);
-      }
+    const metricType = document.createElement('div');
+    metricType.className = 'metric';
+    metricType.textContent = `نوع المستند: ${typeLabel}`;
+    metricRow.appendChild(metricType);
 
-      if (type === 'chapter') {
-        const kp = document.createElement('div');
-        kp.className = 'metric';
-        kp.innerHTML = `<span>أهم النقاط:</span> ${data.keyPoints?.length || 0}`;
-        metricRow.appendChild(kp);
-      }
+    if (type === 'cv') {
+      const ats = document.createElement('div');
+      ats.className = 'metric';
+      ats.innerHTML = `<span>ATS Score:</span> ${data.atsScore ?? 'غير محدد'}`;
+      metricRow.appendChild(ats);
 
-      if (type === 'invoice' && data.invoice) {
-        const items = document.createElement('div');
-        items.className = 'metric';
-        items.innerHTML = `<span>عدد العناصر:</span> ${data.invoice.items?.length || 0}`;
-        metricRow.appendChild(items);
-
-        const total = document.createElement('div');
-        total.className = 'metric';
-        total.innerHTML = `<span>المجموع:</span> ${data.invoice.total || '—'}`;
-        metricRow.appendChild(total);
-      }
-
-      // الملخص
-      const summaryText = data.summary || 'لم يرجع الذكاء ملخصًا واضحًا لهذا المستند.';
-      resultSummary.textContent = summaryText;
-
-      resultHint.textContent = 'تم توليد التقرير. بإمكانك حفظ ملف PDF للرجوع لاحقًا.';
-      downloadAgainBtn.disabled = false;
+      const skillsCount = document.createElement('div');
+      skillsCount.className = 'metric';
+      skillsCount.innerHTML = `<span>مهارات ناقصة:</span> ${data.skillsMissing?.length || 0}`;
+      metricRow.appendChild(skillsCount);
     }
 
-    // توليد PDF على حسب نوع المستند
-    function generatePdfFromAnalysis(data) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
-
-      const marginX = 48;
-      let y = 54;
-
-      doc.setFontSize(18);
-      doc.text("تقرير مساعد المستندات الذكي", marginX, y);
-      y += 28;
-
-      doc.setFontSize(11);
-
-      const type = data.type || 'generic';
-      let typeLabel = 'مستند عام';
-      if (type === 'cv') typeLabel = 'سيرة ذاتية (CV)';
-      if (type === 'chapter') typeLabel = 'فصل / محاضرة';
-      if (type === 'invoice') typeLabel = 'فاتورة';
-
-      doc.text(`نوع المستند: ${typeLabel}`, marginX, y);
-      y += 18;
-
-      if (type === 'cv') {
-        if (data.atsScore != null) {
-          doc.text(`ATS Score: ${data.atsScore}`, marginX, y);
-          y += 18;
-        }
-        doc.text("الملخص:", marginX, y); y += 14;
-        doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y); y += 60;
-
-        doc.text("المهارات الناقصة:", marginX, y); y += 14;
-        (data.skillsMissing || []).forEach(s => {
-          doc.text(`- ${s}`, marginX, y); y += 14;
-        });
-        y += 10;
-
-        doc.text("اقتراحات للتحسين:", marginX, y); y += 14;
-        (data.suggestions || []).forEach(s => {
-          doc.text(`- ${s}`, marginX, y); y += 14;
-        });
-      } else if (type === 'chapter') {
-        doc.text("الملخص:", marginX, y); y += 14;
-        doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y); y += 60;
-
-        doc.text("أهم النقاط:", marginX, y); y += 14;
-        (data.keyPoints || []).forEach(p => {
-          doc.text(`- ${p}`, marginX, y); y += 14;
-        });
-        y += 10;
-
-        doc.text("اقتراحات:", marginX, y); y += 14;
-        (data.suggestions || []).forEach(s => {
-          doc.text(`- ${s}`, marginX, y); y += 14;
-        });
-      } else if (type === 'invoice' && data.invoice) {
-        const inv = data.invoice;
-
-        doc.text(`البائع: ${inv.seller || "—"}`, marginX, y); y += 16;
-        doc.text(`المشتري: ${inv.buyer || "—"}`, marginX, y); y += 16;
-        doc.text(`التاريخ: ${inv.date || "—"}`, marginX, y); y += 22;
-
-        doc.text("العناصر:", marginX, y); y += 14;
-        (inv.items || []).forEach(it => {
-          doc.text(`- ${it}`, marginX, y); y += 14;
-        });
-        y += 10;
-
-        doc.text(`المجموع: ${inv.total || "—"}`, marginX, y); y += 16;
-        doc.text(`الضريبة: ${inv.tax || "—"}`, marginX, y); y += 18;
-
-        if (inv.notes) {
-          doc.text("ملاحظات:", marginX, y); y += 14;
-          doc.text(doc.splitTextToSize(inv.notes, 500), marginX, y);
-        }
-      } else {
-        doc.text("ملخص:", marginX, y); y += 14;
-        doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y);
-      }
-
-      doc.save("smart-document-report.pdf");
+    if (type === 'chapter') {
+      const kp = document.createElement('div');
+      kp.className = 'metric';
+      kp.innerHTML = `<span>أهم النقاط:</span> ${data.keyPoints?.length || 0}`;
+      metricRow.appendChild(kp);
     }
 
-    // اختيار الملف
-    dropzone.addEventListener('click', () => fileInput.click());
+    if (type === 'invoice' && data.invoice) {
+      const items = document.createElement('div');
+      items.className = 'metric';
+      items.innerHTML = `<span>عدد العناصر:</span> ${data.invoice.items?.length || 0}`;
+      metricRow.appendChild(items);
 
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files && fileInput.files[0]) {
-        fileLabel.textContent = fileInput.files[0].name;
-      } else {
-        fileLabel.textContent = "اسحبي ملف الـ PDF هنا أو اضغطي لاختياره";
+      const total = document.createElement('div');
+      total.className = 'metric';
+      total.innerHTML = `<span>المجموع:</span> ${data.invoice.total || '—'}`;
+      metricRow.appendChild(total);
+    }
+
+    const summaryText = data.summary || 'لم يرجع الذكاء ملخصًا واضحًا لهذا المستند.';
+    resultSummary.textContent = summaryText;
+
+    resultHint.textContent = 'تم توليد التقرير. بإمكانك حفظ ملف PDF للرجوع لاحقًا.';
+    downloadAgainBtn.disabled = false;
+  }
+
+  // ---------- توليد PDF محليًا ----------
+
+  function generatePdfFromAnalysis(data) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
+
+    const marginX = 48;
+    let y = 54;
+
+    doc.setFontSize(18);
+    doc.text("تقرير مساعد المستندات الذكي", marginX, y);
+    y += 28;
+
+    doc.setFontSize(11);
+
+    const type = data.type || 'generic';
+    let typeLabel = 'مستند عام';
+    if (type === 'cv') typeLabel = 'سيرة ذاتية (CV)';
+    if (type === 'chapter') typeLabel = 'فصل / محاضرة';
+    if (type === 'invoice') typeLabel = 'فاتورة';
+
+    doc.text(`نوع المستند: ${typeLabel}`, marginX, y);
+    y += 18;
+
+    if (type === 'cv') {
+      if (data.atsScore != null) {
+        doc.text(`ATS Score: ${data.atsScore}`, marginX, y);
+        y += 18;
       }
-    });
+      doc.text("الملخص:", marginX, y); y += 14;
+      doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y); y += 60;
 
-    // إعادة تحميل التقرير
-    downloadAgainBtn.addEventListener('click', () => {
-      if (lastAnalysisData) generatePdfFromAnalysis(lastAnalysisData);
-    });
+      doc.text("المهارات الناقصة:", marginX, y); y += 14;
+      (data.skillsMissing || []).forEach(s => {
+        doc.text(`- ${s}`, marginX, y); y += 14;
+      });
+      y += 10;
 
-    // إرسال النموذج
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      setStatus('');
-      if (!fileInput.files || fileInput.files.length === 0) {
-        setStatus('اختاري ملف PDF أولاً.', true);
-        return;
+      doc.text("اقتراحات للتحسين:", marginX, y); y += 14;
+      (data.suggestions || []).forEach(s => {
+        doc.text(`- ${s}`, marginX, y); y += 14;
+      });
+
+    } else if (type === 'chapter') {
+      doc.text("الملخص:", marginX, y); y += 14;
+      doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y); y += 60;
+
+      doc.text("أهم النقاط:", marginX, y); y += 14;
+      (data.keyPoints || []).forEach(p => {
+        doc.text(`- ${p}`, marginX, y); y += 14;
+      });
+      y += 10;
+
+      doc.text("اقتراحات:", marginX, y); y += 14;
+      (data.suggestions || []).forEach(s => {
+        doc.text(`- ${s}`, marginX, y); y += 14;
+      });
+
+    } else if (type === 'invoice' && data.invoice) {
+      const inv = data.invoice;
+
+      doc.text(`البائع: ${inv.seller || "—"}`, marginX, y); y += 16;
+      doc.text(`المشتري: ${inv.buyer || "—"}`, marginX, y); y += 16;
+      doc.text(`التاريخ: ${inv.date || "—"}`, marginX, y); y += 22;
+
+      doc.text("العناصر:", marginX, y); y += 14;
+      (inv.items || []).forEach(it => {
+        doc.text(`- ${it}`, marginX, y); y += 14;
+      });
+      y += 10;
+
+      doc.text(`المجموع: ${inv.total || "—"}`, marginX, y); y += 16;
+      doc.text(`الضريبة: ${inv.tax || "—"}`, marginX, y); y += 18;
+
+      if (inv.notes) {
+        doc.text("ملاحظات:", marginX, y); y += 14;
+        doc.text(doc.splitTextToSize(inv.notes, 500), marginX, y);
       }
 
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
+    } else {
+      doc.text("ملخص:", marginX, y); y += 14;
+      doc.text(doc.splitTextToSize(data.summary || "", 500), marginX, y);
+    }
 
-      btn.disabled = true;
-      btnText.textContent = 'جاري التحليل...';
-      btnSpinner.style.display = 'inline-block';
-      setStatus('قد يستغرق التحليل عدة ثوانٍ حسب حجم الملف.');
+    doc.save("smart-document-report.pdf");
+  }
 
+  // زر تحميل التقرير مرة أخرى
+  downloadAgainBtn.addEventListener('click', () => {
+    if (lastAnalysisData) generatePdfFromAnalysis(lastAnalysisData);
+  });
+
+  // ---------- إرسال النموذج ----------
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setStatus('');
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+      setStatus('اختاري ملف PDF أولاً.', true);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]); // لازم في n8n يكون Binary Property = file
+
+    btn.disabled = true;
+    btnText.textContent = 'جاري التحليل...';
+    btnSpinner.style.display = 'inline-block';
+    setStatus('قد يستغرق التحليل عدة ثوانٍ حسب حجم الملف.');
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        body: formData
+      });
+
+      const raw = await res.text();
+      console.log('RAW STATUS', res.status);
+      console.log('RAW BODY', raw.slice(0, 300));
+
+      if (!res.ok) {
+        throw new Error(`خطأ في السيرفر (${res.status}).`);
+      }
+
+      let data;
       try {
-        const res = await fetch("https://falshasafey.app.n8n.cloud/webhook/4bb681f6-fadf-44cc-8ff7-74a23a226c9d", {
-          method: 'POST',
-          body: formData
-        });
-
-        const raw = await res.text();
-        console.log('RAW STATUS', res.status);
-        console.log('RAW BODY', raw.slice(0, 300));
-
-        if (!res.ok) {
-          throw new Error(`خطأ في السيرفر (${res.status}).`);
-        }
-
-        let data;
-        try {
-          data = JSON.parse(raw);
-        } catch (e) {
-          throw new Error('الرد من السيرفر ليس JSON صالح.');
-        }
-
-        renderAnalysis(data);
-        generatePdfFromAnalysis(data);
-        setStatus('تم توليد التقرير بنجاح.');
-      } catch (err) {
-        console.error(err);
-        setStatus(err.message || 'صار خطأ أثناء التحليل.', true);
-      } finally {
-        btn.disabled = false;
-        btnText.textContent = 'تحليل المستند الآن';
-        btnSpinner.style.display = 'none';
+        data = JSON.parse(raw);
+      } catch (_) {
+        throw new Error('الرد من السيرفر ليس JSON صالح.');
       }
-    });
-  </script>
+
+      renderAnalysis(data);
+      generatePdfFromAnalysis(data);
+      setStatus('تم توليد التقرير بنجاح.');
+    } catch (err) {
+      console.error(err);
+      setStatus(err.message || 'صار خطأ أثناء التحليل.', true);
+    } finally {
+      btn.disabled = false;
+      btnText.textContent = 'تحليل المستند الآن';
+      btnSpinner.style.display = 'none';
+    }
+  });
+</script>
 </body>
 </html>
