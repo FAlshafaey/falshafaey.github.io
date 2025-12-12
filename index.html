@@ -369,9 +369,8 @@
       </div>
     </div>
   </div>
-
-  <script>
-    // ثبتي إن السكربت اشتغل
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
     console.log("Smart Doc Assistant script loaded ✅");
 
     const WEBHOOK_URL = "https://falshasafey.app.n8n.cloud/webhook/4bb681f6-fadf-44cc-8ff7-74a23a226c9d";
@@ -395,12 +394,19 @@
 
     let lastAnalysisData = null;
 
+    // لو في عنصر ناقص نعرف مباشرة
+    if (!form || !fileInput || !fileLabel || !dropzone) {
+      console.error("❌ عناصر ناقصة:", { form, fileInput, fileLabel, dropzone });
+      return;
+    }
+
     function setStatus(text, isError) {
       statusEl.textContent = text || "";
       statusEl.classList.toggle("error", !!isError);
     }
 
     function activateResultCard(active) {
+      if (!resultCard) return;
       if (active) {
         resultCard.style.opacity = "1";
         resultCard.style.filter = "none";
@@ -418,6 +424,7 @@
     }
 
     function renderAnalysis(data) {
+      if (!resultCard) return;
       lastAnalysisData = data;
       activateResultCard(true);
 
@@ -527,7 +534,8 @@
         }
       } else if (type === "invoice" && data.invoice) {
         const inv = data.invoice;
-        addParagraph("بيانات الفاتورة:", 
+        addParagraph(
+          "بيانات الفاتورة:",
           "البائع: " + (inv.seller || "—") + "\n" +
           "المشتري: " + (inv.buyer || "—") + "\n" +
           "التاريخ: " + (inv.date || "—")
@@ -537,7 +545,8 @@
           addParagraph("العناصر:", inv.items.map(it => "- " + it).join("\n"));
         }
 
-        addParagraph("المبالغ:", 
+        addParagraph(
+          "المبالغ:",
           "المجموع: " + (inv.total || "—") + "\n" +
           "الضريبة: " + (inv.tax || "—")
         );
@@ -552,16 +561,20 @@
       doc.save("smart-document-report.pdf");
     }
 
-    // اختيار الملف
+    // ✅ اختيار الملف
     dropzone.addEventListener("click", function () {
+      console.log("Dropzone clicked");
       fileInput.click();
     });
 
     fileInput.addEventListener("change", function () {
+      console.log("File input changed", fileInput.files);
       if (fileInput.files && fileInput.files[0]) {
         fileLabel.textContent = fileInput.files[0].name;
+        setStatus("تم اختيار الملف ✅");
       } else {
         fileLabel.textContent = "اسحبي ملف الـ PDF هنا أو اضغطي لاختياره";
+        setStatus("");
       }
     });
 
@@ -569,9 +582,12 @@
       if (lastAnalysisData) generatePdfFromAnalysis(lastAnalysisData);
     });
 
+    // ✅ إرسال الفورم
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
       setStatus("");
+
+      console.log("Form submitted");
 
       if (!fileInput.files || fileInput.files.length === 0) {
         setStatus("اختاري ملف PDF أولاً.", true);
@@ -620,6 +636,7 @@
         btnSpinner.style.display = "none";
       }
     });
-  </script>
+  });
+</script>
 </body>
 </html>
